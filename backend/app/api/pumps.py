@@ -15,19 +15,36 @@ def list_pumps(current_user: User = Depends(get_current_user)):
         grouped = df_sales.groupby("PUMP_ID").agg(
             total_txns=("SALE_ID", "count"),
             total_revenue=("SALES_AMOUNT", "sum"),
-            total_litres=("QUANTITY_LITRES", "sum")
+            total_litres=("QUANTITY_LITRES", "sum"),
+            gross_profit=("GROSS_PROFIT", "sum")
         ).reset_index()
         for _, r in grouped.iterrows():
+            rev = float(round(r["total_revenue"], 2))
+            lit = float(round(r["total_litres"], 2))
+            txns = int(r["total_txns"])
+            prof = float(round(r["gross_profit"], 2))
             pump_stats[r["PUMP_ID"]] = {
-                "total_txns": int(r["total_txns"]),
-                "total_revenue": float(round(r["total_revenue"], 2)),
-                "total_litres": float(round(r["total_litres"], 2))
+                "total_txns": txns,
+                "total_revenue": rev,
+                "total_litres": lit,
+                "transactions": txns,
+                "revenue": rev,
+                "litres": lit,
+                "profit": prof
             }
 
     results = []
     for p in PUMPS_DATA:
         pid = p["PUMP_ID"]
-        st = pump_stats.get(pid, {"total_txns": 0, "total_revenue": 0.0, "total_litres": 0.0})
+        st = pump_stats.get(pid, {
+            "total_txns": 0,
+            "total_revenue": 0.0,
+            "total_litres": 0.0,
+            "transactions": 0,
+            "revenue": 0.0,
+            "litres": 0.0,
+            "profit": 0.0
+        })
         results.append({**p, **st})
     return results
 

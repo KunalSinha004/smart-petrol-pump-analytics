@@ -9,9 +9,10 @@ export const PumpsPage: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchPumps = async () => {
+    setIsLoading(true);
     try {
       const data = await pumpsApi.list();
-      setPumps(data);
+      setPumps(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load pumps:', err);
     } finally {
@@ -38,6 +39,45 @@ export const PumpsPage: React.FC = () => {
     }
   };
 
+  const getPumpRevenue = (p: any): number => {
+    return Number(p.revenue ?? p.total_revenue ?? 0);
+  };
+
+  const getPumpLitres = (p: any): number => {
+    return Number(p.litres ?? p.total_litres ?? 0);
+  };
+
+  const getPumpTxns = (p: any): number => {
+    return Number(p.transactions ?? p.total_txns ?? 0);
+  };
+
+  if (isLoading && pumps.length === 0) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-64"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const activeCount = pumps.filter((p) => p.STATUS === 'ACTIVE').length;
+  const maintCount = pumps.filter((p) => p.STATUS === 'MAINTENANCE').length;
+  const islandARev = pumps
+    .filter((p) => p.ISLAND === 'Island A')
+    .reduce((acc, curr) => acc + getPumpRevenue(curr), 0);
+  const islandBRev = pumps
+    .filter((p) => p.ISLAND === 'Island B')
+    .reduce((acc, curr) => acc + getPumpRevenue(curr), 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -53,9 +93,9 @@ export const PumpsPage: React.FC = () => {
 
         <button
           onClick={fetchPumps}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 text-slate-700 dark:text-slate-300"
         >
-          <RefreshCw className="w-4 h-4 text-slate-500" />
+          <RefreshCw className={`w-4 h-4 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Refresh Telemetry</span>
         </button>
       </div>
@@ -65,7 +105,7 @@ export const PumpsPage: React.FC = () => {
         <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-card">
           <span className="text-xs text-slate-500">Active Dispenser Units</span>
           <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-            {pumps.filter((p) => p.STATUS === 'ACTIVE').length} / {pumps.length}
+            {activeCount} / {pumps.length}
           </div>
           <span className="text-[11px] text-emerald-500 font-semibold">Available for customer fueling</span>
         </div>
@@ -73,11 +113,7 @@ export const PumpsPage: React.FC = () => {
         <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-card">
           <span className="text-xs text-slate-500">Island A Throughput</span>
           <div className="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-1">
-            ₹
-            {pumps
-              .filter((p) => p.ISLAND === 'Island A')
-              .reduce((acc, curr) => acc + curr.revenue, 0)
-              .toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            ₹{islandARev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </div>
           <span className="text-[11px] text-slate-400">High-flow dual nozzle</span>
         </div>
@@ -85,11 +121,7 @@ export const PumpsPage: React.FC = () => {
         <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-card">
           <span className="text-xs text-slate-500">Island B Throughput</span>
           <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-            ₹
-            {pumps
-              .filter((p) => p.ISLAND === 'Island B')
-              .reduce((acc, curr) => acc + curr.revenue, 0)
-              .toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            ₹{islandBRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </div>
           <span className="text-[11px] text-slate-400">Heavy vehicle & multi-product</span>
         </div>
@@ -97,7 +129,7 @@ export const PumpsPage: React.FC = () => {
         <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-card">
           <span className="text-xs text-slate-500">Maintenance Backlog</span>
           <div className="text-2xl font-bold text-amber-500 mt-1">
-            {pumps.filter((p) => p.STATUS === 'MAINTENANCE').length} Unit
+            {maintCount} Unit
           </div>
           <span className="text-[11px] text-slate-400">Scheduled technician calibration</span>
         </div>
@@ -107,6 +139,10 @@ export const PumpsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {pumps.map((pump) => {
           const isActive = pump.STATUS === 'ACTIVE';
+          const rev = getPumpRevenue(pump);
+          const litres = getPumpLitres(pump);
+          const txns = getPumpTxns(pump);
+
           return (
             <div
               key={pump.PUMP_ID}
@@ -150,18 +186,18 @@ export const PumpsPage: React.FC = () => {
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-lg">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Total Sales</span>
                   <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                    ₹{pump.revenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    ₹{rev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                   </p>
                 </div>
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-lg">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Litres Dispensed</span>
                   <p className="text-sm font-bold text-sky-600 dark:text-sky-400 mt-0.5">
-                    {pump.litres.toLocaleString('en-IN', { maximumFractionDigits: 1 })} L
+                    {litres.toLocaleString('en-IN', { maximumFractionDigits: 1 })} L
                   </p>
                 </div>
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 rounded-lg">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Transactions</span>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{pump.transactions}</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{txns}</p>
                 </div>
               </div>
 

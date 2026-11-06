@@ -29,6 +29,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
+import { ErrorBoundary } from '../components/ErrorBoundary';
+
 interface NavItem {
   name: string;
   path: string;
@@ -379,7 +381,9 @@ export const AppLayout: React.FC = () => {
 
         {/* Dynamic Page Container */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

@@ -92,7 +92,7 @@ class DashboardService:
         """Aggregated fuel revenue & margin breakdown"""
         df_sales = pd.DataFrame(FUEL_SALES_DATA)
         df_fuels = pd.DataFrame(FUEL_TYPES_DATA)
-        merged = pd.merge(df_sales, df_fuels, on="FUEL_TYPE_ID")
+        merged = pd.merge(df_sales, df_fuels, on="FUEL_TYPE_ID", suffixes=("_sale", ""))
         
         grouped = merged.groupby(["FUEL_NAME", "UNIT", "SELLING_PRICE", "PURCHASE_COST"]).agg(
             revenue=("SALES_AMOUNT", "sum"),
@@ -102,9 +102,9 @@ class DashboardService:
             transactions=("SALE_ID", "count")
         ).reset_index()
 
-        total_rev = grouped["revenue"].sum()
+        total_rev = float(grouped["revenue"].sum())
         grouped["revenue_share_pct"] = (grouped["revenue"] / max(1.0, total_rev) * 100).round(2)
-        grouped["margin_pct"] = (grouped["profit"] / max(1.0, grouped["revenue"]) * 100).round(2)
+        grouped["margin_pct"] = (grouped["profit"] / grouped["revenue"].replace(0, 1) * 100).round(2)
         grouped["revenue"] = grouped["revenue"].round(2)
         grouped["litres"] = grouped["litres"].round(2)
         grouped["profit"] = grouped["profit"].round(2)
