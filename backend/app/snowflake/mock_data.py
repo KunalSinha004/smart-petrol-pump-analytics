@@ -240,21 +240,26 @@ def generate_seed_sales():
         {"SALE_ID":"S008","SHIFT_ID":"SH004","SALE_DATE":"2026-11-02","SHIFT_TYPE":"Morning","PUMP_ID":"P002","OPERATOR_ID":"E001","MANAGER_ID":"E003","CUSTOMER_ID":"C003","FUEL_TYPE_ID":"F001","QUANTITY_LITRES":12.00,"SELLING_PRICE":105.50,"SALES_AMOUNT":1266.00,"FUEL_COST":1152.00,"GROSS_PROFIT":114.00,"PAYMENT_METHOD":"Cash"}
     ]
     
-    # Generate additional historical records from Oct 08 to Nov 06, 2026
+    # Generate additional historical records up to current date
     random.seed(42)
     sales = list(base_sales)
     sale_idx = 9
-    start_dt = date(2026, 10, 8)
-    end_dt = date(2026, 11, 6)
+    start_dt = date(2026, 10, 10)
+    end_dt = max(date.today(), date(2026, 11, 10))
     
     curr = start_dt
     while curr <= end_dt:
         d_str = curr.isoformat()
-        # 3 to 6 sales per day
-        num_sales = random.randint(4, 7)
+        # 4 to 8 sales per day
+        num_sales = random.randint(5, 8)
         for _ in range(num_sales):
             fuel = random.choice(FUEL_TYPES_DATA)
-            pump = random.choice([p for p in PUMPS_DATA if p["STATUS"] == "ACTIVE"])
+            # Prior to Nov 6, Pump 4 (P004) was fully active and dispenses fuel
+            if curr < date(2026, 11, 6):
+                pump = random.choice(PUMPS_DATA)
+            else:
+                # After Nov 6, P004 entered scheduled calibration maintenance
+                pump = random.choice([p for p in PUMPS_DATA if p["STATUS"] == "ACTIVE"])
             operator = random.choice([e for e in EMPLOYEES_DATA if e["ROLE"] == "Operator"])
             manager = random.choice([e for e in EMPLOYEES_DATA if e["ROLE"] == "Manager"])
             cust = random.choice(CUSTOMERS_DATA)

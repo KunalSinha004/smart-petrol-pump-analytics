@@ -79,12 +79,15 @@ class DashboardService:
             transactions=("SALE_ID", "count")
         ).reset_index().sort_values("SALE_DATE")
         
-        # 7-day moving average calculation
+        # 7-day moving average calculation before slicing to preserve continuity
         daily["moving_avg_revenue"] = daily["revenue"].rolling(window=7, min_periods=1).mean().round(2)
         daily["revenue"] = daily["revenue"].round(2)
         daily["litres"] = daily["litres"].round(2)
         daily["gross_profit"] = daily["gross_profit"].round(2)
         daily["date_str"] = daily["SALE_DATE"].dt.strftime("%Y-%m-%d")
+
+        if days and len(daily) > days:
+            daily = daily.iloc[-days:]
 
         return daily.to_dict(orient="records")
 
